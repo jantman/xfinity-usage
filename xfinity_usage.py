@@ -48,6 +48,9 @@ CHANGELOG
 ---------
 
 2017-04-18 Jason Antman <jason@jasonantman.com>:
+  - make more reliable by not saving or loading cookies
+
+2017-04-18 Jason Antman <jason@jasonantman.com>:
   - more complicated wait logic to handle redirects and long page loads
 
 2017-04-17 Jason Antman <jason@jasonantman.com>:
@@ -122,13 +125,8 @@ class XfinityUsage(object):
         """
         Check usage. Returns the return value of ``get_usage()``.
         """
-        if os.path.exists(self.cookie_file):
-            logger.debug('Loading cookies from: %s', self.cookie_file)
-            self.load_cookies(self.cookie_file)
         logger.debug('Getting page...')
         self.get_usage_page()
-        logger.debug('Saving cookies to: %s', self.cookie_file)
-        self.save_cookies(self.cookie_file)
         return self.get_usage()
 
     def do_login(self):
@@ -181,7 +179,7 @@ class XfinityUsage(object):
         while self.browser.current_url == oldurl:
             self.do_screenshot()
             count += 1
-            if count > 20:
+            if count > 10:
                 self.error_screenshot()
                 raise RuntimeError("Login button clicked but no redirect")
             logger.info('Sleeping 1s for redirect after login button click')
@@ -189,34 +187,30 @@ class XfinityUsage(object):
         self.wait_for_page_load()
         self.do_screenshot()
 
-    def get_usage_page(self):
+    def get_usage_page(self, count=0):
         """Get the usage page"""
         self.get(self.USAGE_URL)
         self.wait_for_page_load()
         self.do_screenshot()
         # see if we have the sign_in button; if not, we're logged in
-        logged_in = False
+        logged_in = True
         try:
             self.wait_by(By.ID, 'sign_in')
             logger.info('Not logged in; logging in now')
-            logged_in = True
+            logged_in = False
         except Exception:
             pass
         self.do_screenshot()
         if not logged_in:
-            count = 0
-            while count < 5:
-                count += 1
-                try:
-                    logger.info('Trying to login...')
-                    self.do_login()
-                    self.get(self.USAGE_URL)
-                    break
-                except Exception:
-                    logger.warning('Exception while logging in', exc_info=True)
-            else:
+            if count > 5:
                 self.error_screenshot()
-                raise RuntimeError('All login attempts failed.')
+                raise RuntimeError("Tried 5 times to log in; all failed.")
+            try:
+                logger.info('Trying to login...')
+                self.do_login()
+                self.get_usage_page(count=(count + 1))
+            except Exception:
+                logger.warning('Exception while logging in', exc_info=True)
         logger.info('Sleeping 5s...')
         time.sleep(5)  # unfortunately, seems necessary
         self.wait_for_page_load()
@@ -297,7 +291,21 @@ class XfinityUsage(object):
     def get(self, url):
         """logging wrapper around browser.get"""
         logger.info('GET %s', url)
+
         self.browser.get(url)
+        for x in range(0, 5):
+            try:
+                WebDriverWait(self.browser, 15).until(
+                    lambda x: self.browser.current_url != 'about:blank'
+                )
+                break
+            except Exception:
+                logger.warning('GET %s failed; trying again', url)
+            self.browser.get(url)
+            time.sleep(2)
+        else:
+            self.error_screenshot()
+            raise RuntimeError('GET %s failed' % url)
 
     def get_browser(self, browser_name='phantomjs'):
         """get a webdriver browser instance """
@@ -343,9 +351,6 @@ class XfinityUsage(object):
 
         timeout is in seconds
         """
-        WebDriverWait(self.browser, timeout).until(
-            lambda x: self.browser.current_url != 'about:blank'
-        )
         self.wait_for_ajax_load(timeout=timeout)
         count = 0
         while len(self.browser.page_source) < 30:
