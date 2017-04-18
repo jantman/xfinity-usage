@@ -47,6 +47,9 @@ The latest version of this script can be found at:
 CHANGELOG
 ---------
 
+2017-04-18 Jason Antman <jason@jasonantman.com>:
+  - more complicated wait logic to handle redirects and long page loads
+
 2017-04-17 Jason Antman <jason@jasonantman.com>:
   - update for difference in form after "Remember Me"
 
@@ -77,6 +80,11 @@ except ImportError:
 FORMAT = "[%(asctime)s %(levelname)s] %(message)s"
 logging.basicConfig(level=logging.WARNING, format=FORMAT)
 logger = logging.getLogger()
+
+# suppress selenium DEBUG logging
+selenium_log = logging.getLogger('selenium')
+selenium_log.setLevel(logging.INFO)
+selenium_log.propagate = True
 
 
 class XfinityUsage(object):
@@ -159,27 +167,25 @@ class XfinityUsage(object):
         logger.debug('Clicking Sign In button')
         btn.click()
         self.do_screenshot()
-        self.wait_for_ajax_load()
+        self.wait_for_page_load()
         self.do_screenshot()
 
     def get_usage_page(self):
         """Get the usage page"""
-        self.browser.get(self.USAGE_URL)
-        self.wait_for_ajax_load()
-        WebDriverWait(self.browser, 10).until(
-            lambda x: self.browser.title != 'about:blank'
-        )
+        self.get(self.USAGE_URL)
+        self.wait_for_page_load()
         self.do_screenshot()
         try:
             self.wait_by(By.ID, 'sign_in')
             logger.info('Not logged in; logging in now')
             self.do_screenshot()
             self.do_login()
-            self.browser.get(self.USAGE_URL)
+            self.get(self.USAGE_URL)
         except Exception:
             pass
         logger.info('Sleeping 5s...')
         time.sleep(5)  # unfortunately, seems necessary
+        self.wait_for_page_load()
         self.do_screenshot()
         if 'Billing & Payments' not in self.browser.page_source:
             logger.info('"Billing & Payments" not in page source; login '
@@ -254,6 +260,11 @@ class XfinityUsage(object):
             fh.write(source)
         logger.error('Page source saved to: %s', html_path)
 
+    def get(self, url):
+        """logging wrapper around browser.get"""
+        logger.info('GET %s', url)
+        self.browser.get(url)
+
     def get_browser(self, browser_name='phantomjs'):
         """get a webdriver browser instance """
         if browser_name == 'firefox':
@@ -291,6 +302,27 @@ class XfinityUsage(object):
         if result_str == "complete":
             return True
         return False
+
+    def wait_for_page_load(self, timeout=20):
+        """
+        Function to wait for page load.
+
+        timeout is in seconds
+        """
+        WebDriverWait(self.browser, timeout).until(
+            lambda x: self.browser.title != 'about:blank'
+        )
+        self.wait_for_ajax_load(timeout=timeout)
+        count = 0
+        while len(self.browser.page_source) < 30:
+            if count > 20:
+                self.error_screenshot()
+                raise RuntimeError("Waited 20s for page source to be more "
+                                   "than 30 bytes, but still too small...")
+            count += 1
+            logger.debug('Page source is only %d bytes; sleeping',
+                         len(self.browser.page_source))
+            time.sleep(1)
 
     def wait_for_ajax_load(self, timeout=20):
         """
