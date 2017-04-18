@@ -133,7 +133,16 @@ class XfinityUsage(object):
 
     def do_login(self):
         logger.info('Logging in (%s)', self.browser.current_url)
+        self.wait_for_page_load()
         self.do_screenshot()
+        try:
+            meter = self.browser.find_element_by_xpath(
+                '//div[@data-component="usage-meter"]'
+            )
+            logger.info('Found usage meter on page')
+            return True
+        except Exception:
+            pass
         if self.username not in self.browser.page_source:
             try:
                 u = self.browser.find_element_by_id('user')
@@ -165,8 +174,18 @@ class XfinityUsage(object):
         p.clear()
         p.send_keys(self.password)
         logger.debug('Clicking Sign In button')
+        oldurl = self.browser.current_url
         btn.click()
         self.do_screenshot()
+        count = 0
+        while self.browser.current_url == oldurl:
+            self.do_screenshot()
+            count += 1
+            if count > 20:
+                self.error_screenshot()
+                raise RuntimeError("Login button clicked but no redirect")
+            logger.info('Sleeping 1s for redirect after login button click')
+            time.sleep(1)
         self.wait_for_page_load()
         self.do_screenshot()
 
@@ -175,14 +194,29 @@ class XfinityUsage(object):
         self.get(self.USAGE_URL)
         self.wait_for_page_load()
         self.do_screenshot()
+        # see if we have the sign_in button; if not, we're logged in
+        logged_in = False
         try:
             self.wait_by(By.ID, 'sign_in')
             logger.info('Not logged in; logging in now')
-            self.do_screenshot()
-            self.do_login()
-            self.get(self.USAGE_URL)
+            logged_in = True
         except Exception:
             pass
+        self.do_screenshot()
+        if not logged_in:
+            count = 0
+            while count < 5:
+                count += 1
+                try:
+                    logger.info('Trying to login...')
+                    self.do_login()
+                    self.get(self.USAGE_URL)
+                    break
+                except Exception:
+                    logger.warning('Exception while logging in', exc_info=True)
+            else:
+                self.error_screenshot()
+                raise RuntimeError('All login attempts failed.')
         logger.info('Sleeping 5s...')
         time.sleep(5)  # unfortunately, seems necessary
         self.wait_for_page_load()
@@ -310,7 +344,7 @@ class XfinityUsage(object):
         timeout is in seconds
         """
         WebDriverWait(self.browser, timeout).until(
-            lambda x: self.browser.title != 'about:blank'
+            lambda x: self.browser.current_url != 'about:blank'
         )
         self.wait_for_ajax_load(timeout=timeout)
         count = 0
