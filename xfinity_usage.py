@@ -47,6 +47,9 @@ The latest version of this script can be found at:
 CHANGELOG
 ---------
 
+2017-04-20 Jason Antman <jason@jasonantman.com>:
+  - ensure we quit browser before exiting, to prevent orphaned phantomjs procs
+
 2017-04-18 Jason Antman <jason@jasonantman.com>:
   - make more reliable by not saving or loading cookies
 
@@ -126,8 +129,14 @@ class XfinityUsage(object):
         Check usage. Returns the return value of ``get_usage()``.
         """
         logger.debug('Getting page...')
-        self.get_usage_page()
-        return self.get_usage()
+        try:
+            self.get_usage_page()
+            res = self.get_usage()
+            self.browser.quit()
+            return res
+        except Exception:
+            self.browser.quit()
+            raise
 
     def do_login(self):
         logger.info('Logging in (%s)', self.browser.current_url)
