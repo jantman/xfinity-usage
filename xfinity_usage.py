@@ -47,6 +47,9 @@ The latest version of this script can be found at:
 CHANGELOG
 ---------
 
+2017-06-21 Jason Antman <jason@jasonantman.com>:
+  - update for My Account redesign
+
 2017-04-20 Jason Antman <jason@jasonantman.com>:
   - ensure we quit browser before exiting, to prevent orphaned phantomjs procs
 
@@ -96,7 +99,7 @@ selenium_log.propagate = True
 class XfinityUsage(object):
     """Class to screen-scrape Xfinity site for usage information."""
 
-    USAGE_URL = 'https://customer.xfinity.com/MyServices/Internet/UsageMeter'
+    USAGE_URL = 'https://customer.xfinity.com/#/devices'
 
     def __init__(self, username, password, debug=False,
                  cookie_file='cookies.json'):
@@ -224,9 +227,9 @@ class XfinityUsage(object):
         time.sleep(5)  # unfortunately, seems necessary
         self.wait_for_page_load()
         self.do_screenshot()
-        if 'Billing & Payments' not in self.browser.page_source:
-            logger.info('"Billing & Payments" not in page source; login '
-                           'may have failed.')
+        if '<span class="polaris-greeting">' not in self.browser.page_source:
+            logger.info('<span class="polaris-greeting"> not in page source;'
+                        'login may have failed.')
         self.do_screenshot()
 
     def get_usage(self):
@@ -242,30 +245,38 @@ class XfinityUsage(object):
         self.do_screenshot()
         try:
             meter = self.browser.find_element_by_xpath(
-                '//div[@data-component="usage-meter"]'
+                '//div[@class="usage-info__monthlyInfo"]'
             )
-            logger.debug('Found usage meter div')
+            logger.debug('Found monthly usage div')
         except Exception:
-            logger.critical('Unable to find usage-meter component on page',
+            logger.critical('Unable to find monthly usage div on page',
                             exc_info=True)
             self.error_screenshot()
-            raise RuntimeError('Unable to find usage-meter component.')
-        opts = meter.get_attribute('data-options')
-        logger.debug('Usage meter options: %s', opts)
-        units = re.search(r'unit:([^;]+);', opts)
-        if units is not None:
-            units = units.group(1)
-            logger.debug('Data units: %s', units)
-        else:
-            units = ''
-        used_div = meter.find_element_by_class_name('cui-usage-bar')
-        logger.debug('Found usage bar')
-        total = float(used_div.get_attribute('data-plan'))  # max in GB
-        logger.debug('Total data for plan: %s', total)
-        used_span = meter.find_element_by_xpath('//span[@data-used]')
-        used = float(used_span.get_attribute('data-used'))
-        logger.debug('Used data: %s', used)
-        return {'units': units, 'used': used, 'total': total}
+            raise RuntimeError('Unable to find monthly usage div.')
+        t = meter.find_element_by_xpath(
+            '//span'
+            '[@ng-bind-html="usage.details.userMessage.monthlyUsageState"]'
+        )
+        logger.debug('Usage meter text: %s', t.text)
+        m = re.search(
+            r'(\d+)([A-Za-z]+) remaining of (\d+)([A-Za-z]+) monthly plan',
+            t.text
+        )
+        if m is None:
+            raise RuntimeError('Cannot parse string: %s' % t.text)
+        print(m.groups())
+        remain = float(m.group(1))
+        remain_unit = m.group(2)
+        total = float(m.group(3))
+        total_unit = m.group(4)
+        if remain_unit != total_unit:
+            raise RuntimeError(
+                'Data remaining unit (%s) not the same as total unit (%s)' % (
+                    remain_unit, total_unit
+                )
+            )
+        used = total - remain
+        return {'units': remain_unit, 'used': used, 'total': total}
 
     def do_screenshot(self):
         """take a debug screenshot"""
