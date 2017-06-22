@@ -47,6 +47,9 @@ The latest version of this script can be found at:
 CHANGELOG
 ---------
 
+2017-06-22 Jason Antman <jason@jasonantman.com>:
+  - remove superfluous print statement introduced in last commit
+
 2017-06-21 Jason Antman <jason@jasonantman.com>:
   - update for My Account redesign
 
@@ -264,7 +267,6 @@ class XfinityUsage(object):
         )
         if m is None:
             raise RuntimeError('Cannot parse string: %s' % t.text)
-        print(m.groups())
         remain = float(m.group(1))
         remain_unit = m.group(2)
         total = float(m.group(3))
