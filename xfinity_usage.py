@@ -47,6 +47,9 @@ The latest version of this script can be found at:
 CHANGELOG
 ---------
 
+2017-06-30 Jeff Billimek <jeff@billimek.com>:
+  - making more friendly for invocation as a class
+
 2017-06-22 Jason Antman <jason@jasonantman.com>:
   - clarify PhantomJS requirement of 2.x (2.1.1 recommended)
 
@@ -122,6 +125,8 @@ class XfinityUsage(object):
         :type cookie_file: str
         """
         self._screenshot = debug
+        if debug:
+            set_log_debug()
         if username is None or password is None:
             raise RuntimeError("Username and password cannot be None")
         self.username = username
@@ -131,7 +136,6 @@ class XfinityUsage(object):
                           'Gecko/20100101 Firefox/33.0'
         self.cookie_file = cookie_file
         logger.debug('Getting browser instance...')
-        self.browser = self.get_browser()
 
     def run(self):
         """
@@ -139,6 +143,7 @@ class XfinityUsage(object):
         """
         logger.debug('Getting page...')
         try:
+            self.browser = self.get_browser()
             self.get_usage_page()
             res = self.get_usage()
             self.browser.quit()
