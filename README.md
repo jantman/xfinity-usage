@@ -18,6 +18,10 @@ I'd highly recommend not leaving your username and password hard-coded anywhere 
 
 Note that this screen-scrapes their site; it's likely to break with a redesign.
 
+## Note About Reliability
+
+In short: xfinity's site isn't terribly reliable. Personally, I run this script twice an hour via cron, so 48 times a day, every day. I usually see 1-4 failures a day of all different failure modes - elements missing from the page, connection resets, blank pages, server-side error messages, etc. Keep that in mind. My code could probably do more in terms of error handling and retries, but it's not _that_ important to me.
+
 ## Rationale
 
 Comcast recently started rolling out a 1TB/month bandwidth cap in my area. I've gone over my two "courtesy" months, and the overage fees are pretty insane. I work from home, and sometimes that uses a lot of bandwidth. I want to know when I'm getting close to my limit; this month I'm apparently at 75% and only half way through the month, and I have **no** idea how that happened.
