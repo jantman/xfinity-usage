@@ -8,7 +8,10 @@ This is a little Python script I whipped up that uses [PhantomJS](http://phantom
 
 * Python (tested with 2.7; should work with 3.3+ as well)
 * ``selenium`` Python package (``pip install selenium``)
-* A recent version of PhantomJS installed on your computer; this should be 2.0+, and the script is tested with 2.1.1.
+* One of the supported browsers:
+  * A recent version of PhantomJS installed on your computer; this should be 2.0+, and the script is tested with 2.1.1.
+  * Google Chrome or Chromium and [chromedriver](https://sites.google.com/a/chromium.org/chromedriver/)
+  * Firefox and [Geckodriver](https://github.com/mozilla/geckodriver)
 
 ## Usage
 

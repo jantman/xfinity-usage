@@ -6,10 +6,13 @@ xfinity_usage.py
 Python script to check your Xfinity data usage. Class can also be used from
 other scripts/tools.
 
+(see VERSION constant for version number)
+
 Requirements
 ------------
 
-- phantomjs >= 2.0 (tested with 2.1.1)
+- phantomjs >= 2.0 (tested with 2.1.1), Chrome and Chromedriver, or Firefox and
+  Geckodriver
 - selenium (``pip install selenium``)
 
 Usage
@@ -44,8 +47,17 @@ Free for any use provided that patches are submitted back to me.
 The latest version of this script can be found at:
 <https://github.com/jantman/xfinity-usage>
 
-CHANGELOG
----------
+CHANGELOG (see VERSION constant for version number)
+---------------------------------------------------
+
+1.0.0 2017-11-06 Jason Antman <jason@jasonantman.com>
+  - Added VERSION constant and began tagging git repo for releases
+  - Updated User-Agent string to latest chrome, with "xfinity-usage/VERSION"
+    appended.
+  - Exposed ``browser_name`` parameter on class and as command line argument to
+    allow use with browsers other than phantomjs.
+  - Added headless chromedriver browser option.
+  - Set window size to 1024x768 for all browser types.
 
 2017-06-30 Jeff Billimek <jeff@billimek.com>:
   - making more friendly for invocation as a class
@@ -89,11 +101,14 @@ try:
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.common.desired_capabilities import \
         DesiredCapabilities
+    from selenium.webdriver.chrome.options import Options
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support import expected_conditions as EC
 except ImportError:
     sys.stderr.write("Error importing selenium - 'pip install selenium'\n")
     raise SystemExit(1)
+
+VERSION = '1.0.0'
 
 FORMAT = "[%(asctime)s %(levelname)s] %(message)s"
 logging.basicConfig(level=logging.WARNING, format=FORMAT)
@@ -111,7 +126,7 @@ class XfinityUsage(object):
     USAGE_URL = 'https://customer.xfinity.com/#/devices'
 
     def __init__(self, username, password, debug=False,
-                 cookie_file='cookies.json'):
+                 cookie_file='cookies.json', browser_name='phantomjs'):
         """
         Initialize class.
 
@@ -123,6 +138,8 @@ class XfinityUsage(object):
         :type debug: bool
         :param cookie_file: file to save cookies in
         :type cookie_file: str
+        :param browser_name: Name of the browser to use. Can be one of
+        :type browser_name: str
         """
         self._screenshot = debug
         if debug:
@@ -131,9 +148,11 @@ class XfinityUsage(object):
             raise RuntimeError("Username and password cannot be None")
         self.username = username
         self.password = password
+        self.browser_name = browser_name
         self._screenshot_num = 1
-        self.user_agent = 'Mozilla/5.0 (X11; Linux x86_64; rv:33.0) ' \
-                          'Gecko/20100101 Firefox/33.0'
+        self.user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36' \
+                          ' (KHTML, like Gecko) Chrome/62.0.3202.62 ' \
+                          'xfinity-usage/%s' % VERSION
         self.cookie_file = cookie_file
         logger.debug('Getting browser instance...')
 
@@ -178,6 +197,7 @@ class XfinityUsage(object):
                     logger.debug('Clicking "Remember Me"')
                     rem_me.click()
             except:
+                self.error_screenshot()
                 logger.warning('Unable to find Remember Me button!',
                                exc_info=True)
         try:
@@ -196,6 +216,7 @@ class XfinityUsage(object):
         p.send_keys(self.password)
         logger.debug('Clicking Sign In button')
         oldurl = self.browser.current_url
+        self.do_screenshot()
         btn.click()
         self.do_screenshot()
         count = 0
@@ -337,18 +358,23 @@ class XfinityUsage(object):
             self.error_screenshot()
             raise RuntimeError('GET %s failed' % url)
 
-    def get_browser(self, browser_name='phantomjs'):
+    def get_browser(self):
         """get a webdriver browser instance """
-        if browser_name == 'firefox':
+        if self.browser_name == 'firefox':
             logger.debug("getting Firefox browser (local)")
             if 'DISPLAY' not in os.environ:
                 logger.debug("exporting DISPLAY=:0")
                 os.environ['DISPLAY'] = ":0"
             browser = webdriver.Firefox()
-        elif browser_name == 'chrome':
+        elif self.browser_name == 'chrome':
             logger.debug("getting Chrome browser (local)")
             browser = webdriver.Chrome()
-        elif browser_name == 'phantomjs':
+        elif self.browser_name == 'chrome-headless':
+            logger.debug('getting Chrome browser (local) with --headless')
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            browser = webdriver.Chrome(chrome_options=chrome_options)
+        elif self.browser_name == 'phantomjs':
             logger.debug("getting PhantomJS browser (local)")
             dcap = dict(DesiredCapabilities.PHANTOMJS)
             dcap["phantomjs.page.settings.userAgent"] = self.user_agent
@@ -360,11 +386,14 @@ class XfinityUsage(object):
             browser = webdriver.PhantomJS(
                 desired_capabilities=dcap, service_args=args
             )
-            browser.set_window_size(1024, 768)
         else:
             raise SystemExit(
-                "ERROR: browser type must be one of 'firefox', 'chrome' or "
-                "'phantomjs', not '{b}'".format(b=browser_name))
+                "ERROR: browser type must be one of 'firefox', 'chrome', "
+                "'phantomjs', or 'chrome-headless' not '{b}'".format(
+                    b=browser_name
+                )
+            )
+        browser.set_window_size(1024, 768)
         logger.debug("returning browser")
         return browser
 
@@ -471,6 +500,10 @@ def parse_args(argv):
                    type=str,
                    default=os.path.realpath('xfinity_usage_cookies.json'),
                    help='File to save cookies in')
+    browsers = ['phantomjs', 'firefox', 'chrome', 'chrome-headless']
+    p.add_argument('-b', '--browser', dest='browser_name', type=str,
+                   default='phantomjs', choices=browsers,
+                   help='Browser name/type to use')
     p.add_argument('-j', '--json', dest='json', action='store_true',
                    default=False, help='output JSON')
     args = p.parse_args(argv)
@@ -525,7 +558,8 @@ if __name__ == "__main__":
         os.environ['XFINITY_USER'],
         os.environ['XFINITY_PASSWORD'],
         debug=debug,
-        cookie_file=args.cookie_file
+        cookie_file=args.cookie_file,
+        browser_name=args.browser_name
     )
     res = script.run()
     if args.json:
