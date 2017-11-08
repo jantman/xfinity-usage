@@ -1,5 +1,7 @@
 # xfinity-usage
 
+[![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/latest/active.svg)](http://www.repostatus.org/#active)
+
 Python/selenium script to get Xfinity bandwidth usage
 
 This is a little Python script I whipped up that uses [PhantomJS](http://phantomjs.org/) via the [selenium-python](http://selenium-python.readthedocs.io/) package to log in to your Xfinity account and screen-scrape the data usage. By default the usage is just printed to STDOUT. You can also use the ``XfinityUsage`` class from other applications or scripts; see the docstrings on the ``__init__`` and ``run`` methods for information.
