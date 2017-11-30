@@ -50,6 +50,10 @@ The latest version of this script can be found at:
 CHANGELOG (see VERSION constant for version number)
 ---------------------------------------------------
 
+1.1.0 2017-11-30 Jason Antman <jason@jasonantman.com>
+  - Merge PR #6 from ericzinnikas to handle reporting used amount even if it
+    is over data cap.
+
 1.0.0 2017-11-06 Jason Antman <jason@jasonantman.com>
   - Added VERSION constant and began tagging git repo for releases
   - Updated User-Agent string to latest chrome, with "xfinity-usage/VERSION"
@@ -281,7 +285,7 @@ class XfinityUsage(object):
                 '[@ng-bind-html="usage.details.userMessage.monthlyUsageState"]'
             )
             device = self.browser.find_element_by_xpath(
-                '//*[@ng-if="device.usage"]' 
+                '//*[@ng-if="device.usage"]'
             )
             logger.debug('Found monthly usage divs')
         except Exception:
