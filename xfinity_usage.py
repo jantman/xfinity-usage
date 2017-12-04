@@ -314,7 +314,9 @@ class XfinityUsage(object):
                     used_unit, total_unit
                 )
             )
-        return {'units': used_unit, 'used': used, 'total': total}
+
+        percent = used/total*100
+        return {'units': used_unit, 'used': used, 'total': total, 'percent': percent}
 
     def do_screenshot(self):
         """take a debug screenshot"""
@@ -572,6 +574,6 @@ if __name__ == "__main__":
     if args.json:
         print(json.dumps(res))
         raise SystemExit(0)
-    print("Used %d of %d %s this month." % (
-        res['used'], res['total'], res['units']
+    print("Used %d of %d %s this month which is %d %%." % (
+        res['used'], res['total'], res['units'], res['percent']
     ))
