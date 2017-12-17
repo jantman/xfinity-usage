@@ -1,97 +1,41 @@
 #!/usr/bin/env python
 """
-xfinity_usage.py
-================
+xfinity-usage Python package
+============================
 
 Python script to check your Xfinity data usage. Class can also be used from
 other scripts/tools.
 
-(see VERSION constant for version number)
-
-Requirements
-------------
-
-- phantomjs >= 2.0 (tested with 2.1.1), Chrome and Chromedriver, or Firefox and
-  Geckodriver
-- selenium (``pip install selenium``)
-
-Usage
------
-
-Export your Xfinity username and password as ``XFINITY_USER`` and
-``XFINITY_PASSWORD`` environment variables, respectively. See
-``xfinity_usage.py -h`` for further information.
-
-Disclaimer
-----------
-
-I have no idea what Xfinity's terms of use for their account management website
-are, or if they claim to have an issue with automating access. They used to have
-a desktop app to check usage, backed by an API (see
-https://github.com/WTFox/comcastUsage ), but that's been discontinued. The fact
-that they force me to login with my account credentials WHEN CONNECTING FROM
-*THEIR* NETWORK, USING THE IP ADDRESS *THEY* ISSUED TO MY ACCOUNT just to check
-my usage, pretty clearly shows me that Comcast cares a lot more about extracting
-the maximum overage fees from their customers than the "quality of service" that
-they claim these bandwidth limits exist for. So... use this at your own risk,
-but it seems pretty clear (i.e. discontinuing their "bandwidth meter" desktop
-app) that Comcast wants to prevent users from having a clear idea of their
-supposed bandwidth usage.
-
-License
--------
-
-Copyright 2017 Jason Antman <jason@jasonantman.com> <http://www.jasonantman.com>
-Free for any use provided that patches are submitted back to me.
-
 The latest version of this script can be found at:
 <https://github.com/jantman/xfinity-usage>
 
-CHANGELOG (see VERSION constant for version number)
----------------------------------------------------
+##################################################################################
+Copyright 2017 Jason Antman <jason@jasonantman.com>
 
-1.2.0 2017-12-04 Jason Antman <jason@jasonantman.com>
-  - Update for redesign that removed ``ng-if="device.usage"`` element.
+    This file is part of xfinity-usage, also known as xfinity-usage.
 
-1.1.0 2017-11-30 Jason Antman <jason@jasonantman.com>
-  - Merge PR #6 from ericzinnikas to handle reporting used amount even if it
-    is over data cap.
+    xfinity-usage is free software: you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-1.0.0 2017-11-06 Jason Antman <jason@jasonantman.com>
-  - Added VERSION constant and began tagging git repo for releases
-  - Updated User-Agent string to latest chrome, with "xfinity-usage/VERSION"
-    appended.
-  - Exposed ``browser_name`` parameter on class and as command line argument to
-    allow use with browsers other than phantomjs.
-  - Added headless chromedriver browser option.
-  - Set window size to 1024x768 for all browser types.
+    xfinity-usage is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
 
-2017-06-30 Jeff Billimek <jeff@billimek.com>:
-  - making more friendly for invocation as a class
+    You should have received a copy of the GNU Affero General Public License
+    along with xfinity-usage.  If not, see <http://www.gnu.org/licenses/>.
 
-2017-06-22 Jason Antman <jason@jasonantman.com>:
-  - clarify PhantomJS requirement of 2.x (2.1.1 recommended)
-
-2017-06-22 Jason Antman <jason@jasonantman.com>:
-  - remove superfluous print statement introduced in last commit
-
-2017-06-21 Jason Antman <jason@jasonantman.com>:
-  - update for My Account redesign
-
-2017-04-20 Jason Antman <jason@jasonantman.com>:
-  - ensure we quit browser before exiting, to prevent orphaned phantomjs procs
-
-2017-04-18 Jason Antman <jason@jasonantman.com>:
-  - make more reliable by not saving or loading cookies
-
-2017-04-18 Jason Antman <jason@jasonantman.com>:
-  - more complicated wait logic to handle redirects and long page loads
-
-2017-04-17 Jason Antman <jason@jasonantman.com>:
-  - update for difference in form after "Remember Me"
-
-2017-04-16 Jason Antman <jason@jasonantman.com>:
-  - initial version of script
+The Copyright and Authors attributions contained herein may not be removed or
+otherwise altered, except to add the Author attribution of a contributor to
+this work. (Additional Terms pursuant to Section 7b of the AGPL v3)
+##################################################################################
+While not legally required, I sincerely request that anyone who finds
+bugs please submit them at <https://github.com/jantman/xfinity-usage> or
+to me via email, and that you send any contributions or improvements
+either as a pull request on GitHub, or to me via email.
+##################################################################################
 """
 
 import sys
@@ -102,6 +46,8 @@ import json
 import codecs
 import time
 import re
+
+from xfinity_usage.version import VERSION, PROJECT_URL
 
 try:
     from selenium import webdriver
@@ -114,8 +60,6 @@ try:
 except ImportError:
     sys.stderr.write("Error importing selenium - 'pip install selenium'\n")
     raise SystemExit(1)
-
-VERSION = '1.2.0'
 
 FORMAT = "[%(asctime)s %(levelname)s] %(message)s"
 logging.basicConfig(level=logging.WARNING, format=FORMAT)
@@ -183,7 +127,7 @@ class XfinityUsage(object):
         self.wait_for_page_load()
         self.do_screenshot()
         try:
-            meter = self.browser.find_element_by_xpath(
+            self.browser.find_element_by_xpath(
                 '//div[@data-component="usage-meter"]'
             )
             logger.info('Found usage meter on page')
@@ -195,27 +139,29 @@ class XfinityUsage(object):
                 u = self.browser.find_element_by_id('user')
                 u.clear()
                 u.send_keys(self.username)
-            except:
-                logger.critical('Unable to find username input box!', exc_info=True)
+            except Exception:
+                logger.critical(
+                    'Unable to find username input box!', exc_info=True
+                )
                 self.do_screenshot()
             try:
                 rem_me = self.browser.find_element_by_id('remember_me')
                 if not rem_me.is_selected():
                     logger.debug('Clicking "Remember Me"')
                     rem_me.click()
-            except:
+            except Exception:
                 self.error_screenshot()
                 logger.warning('Unable to find Remember Me button!',
                                exc_info=True)
         try:
             p = self.browser.find_element_by_id('passwd')
-        except:
+        except Exception:
             logger.critical('Unable to find passwd input box!', exc_info=True)
             self.error_screenshot()
             raise RuntimeError("Unable to find passwd input.")
         try:
             btn = self.browser.find_element_by_id('sign_in')
-        except:
+        except Exception:
             logger.critical('Unable to find Sign In button!', exc_info=True)
             self.error_screenshot()
             raise RuntimeError("Unable to find Sign In button.")
@@ -410,7 +356,7 @@ class XfinityUsage(object):
             raise SystemExit(
                 "ERROR: browser type must be one of 'firefox', 'chrome', "
                 "'phantomjs', or 'chrome-headless' not '{b}'".format(
-                    b=browser_name
+                    b=self.browser_name
                 )
             )
         browser.set_window_size(1024, 768)
@@ -513,7 +459,12 @@ def parse_args(argv):
     """
     parse command line arguments
     """
-    p = argparse.ArgumentParser(description='Check Xfinity data usage')
+    p = argparse.ArgumentParser(
+        description='Check Xfinity data usage; see <%s> for more '
+                    'information' % PROJECT_URL, prog='xfinity-usage'
+    )
+    p.add_argument('-V', '--version', action='version',
+                   version='xfinity-usage %s <%s>' % (VERSION, PROJECT_URL))
     p.add_argument('-v', '--verbose', dest='verbose', action='count', default=0,
                    help='verbose output. specify twice for debug-level output.')
     p.add_argument('-c', '--cookie-file', dest='cookie_file', action='store',
@@ -528,6 +479,7 @@ def parse_args(argv):
                    default=False, help='output JSON')
     args = p.parse_args(argv)
     return args
+
 
 def set_log_info():
     """set logger level to INFO"""
@@ -557,7 +509,8 @@ def set_log_level_format(level, format):
     logger.handlers[0].setFormatter(formatter)
     logger.setLevel(level)
 
-if __name__ == "__main__":
+
+def main():
     args = parse_args(sys.argv[1:])
 
     # set logging level
@@ -588,3 +541,7 @@ if __name__ == "__main__":
     print("Used %d of %d %s this month." % (
         res['used'], res['total'], res['units']
     ))
+
+
+if __name__ == "__main__":
+    main()
