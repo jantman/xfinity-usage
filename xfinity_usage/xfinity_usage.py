@@ -49,7 +49,7 @@ import re
 from datetime import datetime
 import socket
 
-from xfinity_usage.version import VERSION, PROJECT_URL
+from .version import VERSION, PROJECT_URL
 
 try:
     from selenium import webdriver
