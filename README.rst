@@ -54,7 +54,15 @@ Python API
 ++++++++++
 
 See the source of the ``xfinity_usage.py`` script, specifically the ``__init__``
-and ``run`` methods of the ``XfinityUsage`` class.
+and ``run`` methods of the ``XfinityUsage`` class. As a simple example:
+
+.. code-block:: pycon
+
+   >>> import os
+   >>> from xfinity_usage.xfinity_usage import XfinityUsage
+   >>> u = XfinityUsage(os.environ['XFINITY_USER'], os.environ['XFINITY_PASSWORD'], browser_name='chrome-headless')
+   >>> u.run()
+   {'units': 'GB', 'used': 553.0, 'total': 1024.0}
 
 Note About Reliability
 ----------------------
