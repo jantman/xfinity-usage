@@ -32,3 +32,4 @@ case this project ever gets a co-maintainer.
 7. Upload package to live pypi:
 
     * ``twine upload dist/*``
+8. Create a GitHub Release with the changelog contents.
