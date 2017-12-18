@@ -34,3 +34,9 @@ AUTHORS:
 Jason Antman <jason@jasonantman.com> <http://www.jasonantman.com>
 ##################################################################################
 """
+from .xfinity_usage import XfinityUsage
+
+
+__all__ = [
+    'XfinityUsage',
+]

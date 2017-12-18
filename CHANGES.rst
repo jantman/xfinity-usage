@@ -1,6 +1,12 @@
 Changelog
 =========
 
+
+2.0.1 (2017-12-178
+------------------
+
+  - Add references to the XfinityUsage class in __init__.py
+
 2.0.0 (2017-12-17)
 ------------------
 
