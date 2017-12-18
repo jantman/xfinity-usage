@@ -8,6 +8,7 @@ Changelog
     of the repository, but if you want to use the previous script unmodified you
     can now do so via ``pip install xfinity-usage`` instead of having to git clone.
   - Add support for unit tests, but no real tests yet
+  - Add support for optionally sending metrics to a `Graphite <https://graphiteapp.org/>`_ instance.
 
 1.2.0 (2017-12-04)
 ------------------

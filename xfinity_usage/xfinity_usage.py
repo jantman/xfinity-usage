@@ -46,6 +46,8 @@ import json
 import codecs
 import time
 import re
+from datetime import datetime
+import socket
 
 from xfinity_usage.version import VERSION, PROJECT_URL
 
@@ -455,6 +457,68 @@ class XfinityUsage(object):
         logger.info('Wrote %d cookies to: %s', len(cookies), cookie_file)
 
 
+class GraphiteSender(object):
+
+    def __init__(self, host, port, prefix='xfinity'):
+        self.host = host
+        self.port = port
+        self.prefix = prefix
+        logger.info('Sending graphite data to %s:%s', host, port)
+
+    def _graphite_send(self, send_str):
+        """
+        Send data to graphite
+
+        :param send_str: data string to send
+        :type send_str: str
+        """
+        logger.debug('Opening socket connection to %s:%s', self.host, self.port)
+        sock = socket.create_connection((self.host, self.port), 10)
+        logger.debug('Sending data: "%s"', send_str)
+        if sys.version_info[0] > 2:
+            sock.sendall(send_str.encode('utf-8'))
+        else:
+            sock.sendall(send_str)
+        logger.info('Data sent to Graphite')
+        sock.close()
+
+    def _clean_name(self, metric_name):
+        """
+        Return a graphite-safe metric name.
+
+        :param metric_name: original metric name
+        :type metric_name: str
+        :return: graphite-safe metric name
+        :rtype: str
+        """
+        metric_name = metric_name.lower()
+        newk = re.sub(r'[^A-Za-z0-9_-]', '_', metric_name)
+        if newk != metric_name:
+            logger.debug('Cleaned metric name from "%s" to "%s"',
+                         metric_name, newk)
+        return newk
+
+    def send_data(self, data):
+        """
+        Send data to Graphite.
+
+        :param data: list of data dicts
+        :type data: list
+        """
+        send_str = ''
+        for d in data:
+            ts = time.mktime(d['datetime'].timetuple())
+            for k in sorted(d.keys()):
+                if k == 'datetime':
+                    continue
+                send_str += "%s %s %d\n" % (
+                    '%s.%s' % (self.prefix, self._clean_name(k)),
+                    d[k],
+                    ts
+                )
+        self._graphite_send(send_str)
+
+
 def parse_args(argv):
     """
     parse command line arguments
@@ -477,6 +541,17 @@ def parse_args(argv):
                    help='Browser name/type to use')
     p.add_argument('-j', '--json', dest='json', action='store_true',
                    default=False, help='output JSON')
+    p.add_argument('-g', '--graphite', action='store_true', default=False,
+                   help='send metrics to graphite', dest='graphite')
+    p.add_argument('-H', '--graphite-host', action='store', type=str,
+                   dest='graphite_host', default='127.0.0.1',
+                   help='Graphite host to send to (default: 127.0.0.1)')
+    p.add_argument('-P', '--graphite-port', action='store', type=int,
+                   dest='graphite_port', default='2003',
+                   help='Graphite port to send to (default: 2003)')
+    p.add_argument('-p', '--graphite-prefix', action='store', type=str,
+                   dest='graphite_prefix', default='xfinity',
+                   help='graphite metric prefix (default: xfinity)')
     args = p.parse_args(argv)
     return args
 
@@ -541,6 +616,16 @@ def main():
     print("Used %d of %d %s this month." % (
         res['used'], res['total'], res['units']
     ))
+    if args.graphite:
+        # send to graphite
+        sender = GraphiteSender(
+            args.graphite_host, args.graphite_port, prefix=args.graphite_prefix
+        )
+        sender.send_data([{
+            'datetime': datetime.now(),
+            'used_%s' % res['units']: res['used'],
+            'total_%s' % res['units']: res['total']
+        }])
 
 
 if __name__ == "__main__":
