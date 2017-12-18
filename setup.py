@@ -36,7 +36,7 @@ Jason Antman <jason@jasonantman.com> <http://www.jasonantman.com>
 """
 
 from setuptools import setup, find_packages
-from xfinity_usage.xfinity_usage import VERSION, PROJECT_URL
+from xfinity_usage.version import VERSION, PROJECT_URL
 
 with open('README.rst') as file:
     long_description = file.read()
