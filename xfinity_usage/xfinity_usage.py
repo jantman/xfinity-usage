@@ -102,6 +102,7 @@ class XfinityUsage(object):
         self.username = username
         self.password = password
         self.browser_name = browser_name
+        self.browser = None
         self._screenshot_num = 1
         self.user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36' \
                           ' (KHTML, like Gecko) Chrome/62.0.3202.62 ' \
@@ -121,7 +122,8 @@ class XfinityUsage(object):
             self.browser.quit()
             return res
         except Exception:
-            self.browser.quit()
+            if self.browser is not None:
+                self.browser.quit()
             raise
 
     def do_login(self):

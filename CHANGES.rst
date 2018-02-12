@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.0.2 (2018-02-12)
+------------------
+
+- Fix ``run()`` method exception handler calling ``.quit()`` on missing ``browser`` attribute when ``get_browser()`` raises an exception, causing a confusing traceback.
+
 2.0.1 (2017-12-18)
 ------------------
 
