@@ -5,6 +5,7 @@ Changelog
 ------------------
 
 - Fix ``run()`` method exception handler calling ``.quit()`` on missing ``browser`` attribute when ``get_browser()`` raises an exception, causing a confusing traceback.
+- Fix issue where ``remember_me`` checkbox is not clickable using Chrome Headless, resulting in "Element is not clickable" / "Other element would receive the click" error.
 
 2.0.1 (2017-12-18)
 ------------------

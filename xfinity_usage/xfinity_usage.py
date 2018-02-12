@@ -152,7 +152,11 @@ class XfinityUsage(object):
                 rem_me = self.browser.find_element_by_id('remember_me')
                 if not rem_me.is_selected():
                     logger.debug('Clicking "Remember Me"')
-                    rem_me.click()
+                    # because of layering issues, for chrome-headless we need to
+                    # click the containing span instead of the checkbox itself.
+                    self.browser.find_element_by_id(
+                        'remember_me_checkbox'
+                    ).click()
             except Exception:
                 self.error_screenshot()
                 logger.warning('Unable to find Remember Me button!',
