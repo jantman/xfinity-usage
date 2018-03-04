@@ -102,6 +102,7 @@ class XfinityUsage(object):
         self.username = username
         self.password = password
         self.browser_name = browser_name
+        self.browser = None
         self._screenshot_num = 1
         self.user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36' \
                           ' (KHTML, like Gecko) Chrome/62.0.3202.62 ' \
@@ -121,7 +122,8 @@ class XfinityUsage(object):
             self.browser.quit()
             return res
         except Exception:
-            self.browser.quit()
+            if self.browser is not None:
+                self.browser.quit()
             raise
 
     def do_login(self):
@@ -150,7 +152,11 @@ class XfinityUsage(object):
                 rem_me = self.browser.find_element_by_id('remember_me')
                 if not rem_me.is_selected():
                     logger.debug('Clicking "Remember Me"')
-                    rem_me.click()
+                    # because of layering issues, for chrome-headless we need to
+                    # click the containing span instead of the checkbox itself.
+                    self.browser.find_element_by_id(
+                        'remember_me_checkbox'
+                    ).click()
             except Exception:
                 self.error_screenshot()
                 logger.warning('Unable to find Remember Me button!',
