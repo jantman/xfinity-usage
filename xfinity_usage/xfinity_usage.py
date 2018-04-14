@@ -77,6 +77,7 @@ class XfinityUsage(object):
     """Class to screen-scrape Xfinity site for usage information."""
 
     USAGE_URL = 'https://customer.xfinity.com/#/devices'
+    JSON_URL = 'https://customer.xfinity.com/apis/services/internet/usage'
 
     def __init__(self, username, password, debug=False,
                  cookie_file='cookies.json', browser_name='phantomjs'):
@@ -119,6 +120,8 @@ class XfinityUsage(object):
             self.browser = self.get_browser()
             self.get_usage_page()
             res = self.get_usage()
+            self.get_usage_json()
+            res['raw'] = self.parse_json()
             self.browser.quit()
             return res
         except Exception:
@@ -225,6 +228,11 @@ class XfinityUsage(object):
                         'login may have failed.')
         self.do_screenshot()
 
+    def get_usage_json(self):
+        self.get(self.JSON_URL)
+        self.wait_for_page_load()
+        self.do_screenshot()
+
     def get_usage(self):
         """
         Get the actual usage from the page
@@ -281,7 +289,11 @@ class XfinityUsage(object):
                     used_unit, total_unit
                 )
             )
-        return {'units': used_unit, 'used': used, 'total': total}
+        return {'units': used_unit, 'used': used, 'total': total,
+                'now': int(time.time())}
+
+    def parse_json(self):
+        return json.loads(self.browser.find_element_by_tag_name('pre').text)
 
     def do_screenshot(self):
         """take a debug screenshot"""

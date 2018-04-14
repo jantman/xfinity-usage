@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.0.3 (2018-04-14)
+-----------------
+
+- Add support for raw JSON data and scrape time
+
 2.0.2 (2018-02-12)
 ------------------
 
