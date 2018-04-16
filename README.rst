@@ -62,7 +62,79 @@ and ``run`` methods of the ``XfinityUsage`` class. As a simple example:
    >>> from xfinity_usage.xfinity_usage import XfinityUsage
    >>> u = XfinityUsage(os.environ['XFINITY_USER'], os.environ['XFINITY_PASSWORD'], browser_name='chrome-headless')
    >>> u.run()
-   {'units': 'GB', 'used': 553.0, 'total': 1024.0}
+   {
+       "data_timestamp": 1523913455,
+       "units": "GB",
+       "used": 224.0,
+       "total": 1024.0,
+       "raw": {
+           "courtesyUsed": 0,
+           "courtesyRemaining": 2,
+           "courtesyAllowed": 2,
+           "inPaidOverage": false,
+           "usageMonths": [
+               {
+                   "policyName": "1 Terabyte Data Plan",
+                   "startDate": "10/01/2017",
+                   "endDate": "10/31/2017",
+                   "homeUsage": 408.0,
+                   "allowableUsage": 1024.0,
+                   "unitOfMeasure": "GB",
+                   "devices": [
+                       {
+                           "id": "AB:CD:EF:01:23:45",
+                           "usage": 301.0
+                       },
+                       {
+                           "id": "12:34:56:78:90:AB",
+                           "usage": 107.0
+                       }
+                   ],
+                   "additionalBlocksUsed": 0.0,
+                   "additionalCostPerBlock": 10.0,
+                   "additionalUnitsPerBlock": 50.0,
+                   "additionalIncluded": 0.0,
+                   "additionalUsed": 0.0,
+                   "additionalPercentUsed": 0.0,
+                   "additionalRemaining": 0.0,
+                   "billableOverage": 0.0,
+                   "overageCharges": 0.0,
+                   "overageUsed": 0.0,
+                   "currentCreditAmount": 0,
+                   "maxCreditAmount": 0,
+                   "policy": "limited"
+               },
+               # 5 additional months removed for brevity
+               {
+                   "policyName": "1 Terabyte Data Plan",
+                   "startDate": "04/01/2018",
+                   "endDate": "04/30/2018",
+                   "homeUsage": 224.0,
+                   "allowableUsage": 1024.0,
+                   "unitOfMeasure": "GB",
+                   "devices": [
+                       {
+                           "id": "12:34:56:78:90:AB",
+                           "usage": 224.0
+                       }
+                   ],
+                   "additionalBlocksUsed": 0.0,
+                   "additionalCostPerBlock": 10.0,
+                   "additionalUnitsPerBlock": 50.0,
+                   "additionalIncluded": 0.0,
+                   "additionalUsed": 0.0,
+                   "additionalPercentUsed": 0.0,
+                   "additionalRemaining": 0.0,
+                   "billableOverage": 0.0,
+                   "overageCharges": 0.0,
+                   "overageUsed": 0.0,
+                   "currentCreditAmount": 0,
+                   "maxCreditAmount": 0,
+                   "policy": "limited"
+               }
+           ]
+       }
+   }
 
 Note About Reliability
 ----------------------

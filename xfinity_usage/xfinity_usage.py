@@ -48,6 +48,8 @@ import time
 import re
 from datetime import datetime
 import socket
+from operator import itemgetter
+from copy import deepcopy
 
 from .version import VERSION, PROJECT_URL
 
@@ -77,6 +79,7 @@ class XfinityUsage(object):
     """Class to screen-scrape Xfinity site for usage information."""
 
     USAGE_URL = 'https://customer.xfinity.com/#/devices'
+    JSON_URL = 'https://customer.xfinity.com/apis/services/internet/usage'
 
     def __init__(self, username, password, debug=False,
                  cookie_file='cookies.json', browser_name='phantomjs'):
@@ -118,7 +121,22 @@ class XfinityUsage(object):
         try:
             self.browser = self.get_browser()
             self.get_usage_page()
-            res = self.get_usage()
+            try:
+                # first try getting the JSON from the API URL
+                res = {
+                    'raw': self.get_usage_json(),
+                    'data_timestamp': int(time.time())
+                }
+                # and then set the "units", "used" and "total" keys
+                res.update(self.extract_current_from_json(deepcopy(res['raw'])))
+            except Exception:
+                # otherwise, fall back to scraping the page
+                logger.error(
+                    'Error getting usage JSON; falling back to scraping page'
+                )
+                self.get_usage_page()
+                res = self.get_usage()
+                res['data_timestamp'] = int(time.time())
             self.browser.quit()
             return res
         except Exception:
@@ -224,6 +242,41 @@ class XfinityUsage(object):
             logger.info('<span class="polaris-greeting"> not in page source;'
                         'login may have failed.')
         self.do_screenshot()
+
+    def get_usage_json(self):
+        """Return the JSON usage information from the internal API url."""
+        logger.debug('Getting usage JSON from: %s', self.JSON_URL)
+        self.get(self.JSON_URL)
+        self.wait_for_page_load()
+        self.do_screenshot()
+        raw = self.browser.find_element_by_tag_name('pre').text
+        try:
+            return json.loads(raw)
+        except Exception:
+            logger.error(
+                'Exception loading JSON from <pre> content: %s',
+                raw, exc_info=True
+            )
+            raise
+
+    def extract_current_from_json(self, raw):
+        """
+        Given the return dict from :py:meth:`~.get_usage_json`, return a dict
+        with "units", "used" and "total" keys for the current (latest) month.
+        """
+        for item in raw['usageMonths']:
+            item['startDate'] = datetime.strptime(
+                item['startDate'], '%m/%d/%Y'
+            )
+            item['endDate'] = datetime.strptime(
+                item['endDate'], '%m/%d/%Y'
+            ).date()
+        latest = sorted(raw['usageMonths'], key=itemgetter('endDate'))[-1]
+        return {
+            'units': latest['unitOfMeasure'],
+            'used': latest['homeUsage'],
+            'total': latest['allowableUsage']
+        }
 
     def get_usage(self):
         """
