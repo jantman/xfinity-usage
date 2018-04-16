@@ -46,8 +46,10 @@ import json
 import codecs
 import time
 import re
-from datetime import datetime
+from datetime import datetime, date
 import socket
+from operator import itemgetter
+from copy import deepcopy
 
 from .version import VERSION, PROJECT_URL
 
@@ -119,9 +121,22 @@ class XfinityUsage(object):
         try:
             self.browser = self.get_browser()
             self.get_usage_page()
-            res = self.get_usage()
-            self.get_usage_json()
-            res['raw'] = self.parse_json()
+            try:
+                # first try getting the JSON from the API URL
+                res = {
+                    'raw': self.get_usage_json(),
+                    'data_timestamp': int(time.time())
+                }
+                # and then set the "units", "used" and "total" keys
+                res.update(self.extract_current_from_json(deepcopy(res['raw'])))
+            except Exception:
+                # otherwise, fall back to scraping the page
+                logger.error(
+                    'Error getting usage JSON; falling back to scraping page'
+                )
+                self.get_usage_page()
+                res = self.get_usage()
+                res['data_timestamp'] = int(time.time())
             self.browser.quit()
             return res
         except Exception:
@@ -244,6 +259,25 @@ class XfinityUsage(object):
             )
             raise
 
+    def extract_current_from_json(self, raw):
+        """
+        Given the return dict from :py:meth:`~.get_usage_json`, return a dict
+        with "units", "used" and "total" keys for the current (latest) month.
+        """
+        for item in raw['usageMonths']:
+            item['startDate'] = datetime.strptime(
+                item['startDate'], '%m/%d/%Y'
+            )
+            item['endDate'] = datetime.strptime(
+                item['endDate'], '%m/%d/%Y'
+            ).date()
+        latest = sorted(raw['usageMonths'], key=itemgetter('endDate'))[-1]
+        return {
+            'units': latest['unitOfMeasure'],
+            'used': latest['homeUsage'],
+            'total': latest['allowableUsage']
+        }
+
     def get_usage(self):
         """
         Get the actual usage from the page
@@ -300,8 +334,7 @@ class XfinityUsage(object):
                     used_unit, total_unit
                 )
             )
-        return {'units': used_unit, 'used': used, 'total': total,
-                'now': int(time.time())}
+        return {'units': used_unit, 'used': used, 'total': total}
 
     def do_screenshot(self):
         """take a debug screenshot"""
