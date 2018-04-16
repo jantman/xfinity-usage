@@ -1,10 +1,13 @@
 Changelog
 =========
 
-2.0.3 (2018-04-14)
+3.0.0 (2018-04-18)
 -----------------
 
-- Add support for raw JSON data and scrape time
+- Get raw JSON data from the ``https://customer.xfinity.com/apis/services/internet/usage`` endpoint.
+- If the above succeeds, use this for data source instead of screen-scraping the page.
+- Add raw JSON data from above to output in "raw" key.
+- Add scrape time to JSON output in "data_timestamp" key.
 
 2.0.2 (2018-02-12)
 ------------------
