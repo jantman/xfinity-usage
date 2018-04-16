@@ -229,9 +229,20 @@ class XfinityUsage(object):
         self.do_screenshot()
 
     def get_usage_json(self):
+        """Return the JSON usage information from the internal API url."""
+        logger.debug('Getting usage JSON from: %s', self.JSON_URL)
         self.get(self.JSON_URL)
         self.wait_for_page_load()
         self.do_screenshot()
+        raw = self.browser.find_element_by_tag_name('pre').text
+        try:
+            return json.loads(raw)
+        except Exception:
+            logger.error(
+                'Exception loading JSON from <pre> content: %s',
+                raw, exc_info=True
+            )
+            raise
 
     def get_usage(self):
         """
@@ -291,9 +302,6 @@ class XfinityUsage(object):
             )
         return {'units': used_unit, 'used': used, 'total': total,
                 'now': int(time.time())}
-
-    def parse_json(self):
-        return json.loads(self.browser.find_element_by_tag_name('pre').text)
 
     def do_screenshot(self):
         """take a debug screenshot"""
