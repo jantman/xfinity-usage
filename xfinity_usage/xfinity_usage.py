@@ -46,7 +46,7 @@ import json
 import codecs
 import time
 import re
-from datetime import datetime, date
+from datetime import datetime
 import socket
 from operator import itemgetter
 from copy import deepcopy
