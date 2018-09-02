@@ -1,9 +1,9 @@
 xfinity-usage
 =============
 
-.. image:: http://www.repostatus.org/badges/latest/active.svg
-   :alt: Project Status: Active – The project has reached a stable, usable state and is being actively developed.
-   :target: http://www.repostatus.org/#active
+.. image:: https://www.repostatus.org/badges/latest/unsupported.svg
+   :alt: Project Status: Unsupported – The project has reached a stable, usable state but the author(s) have ceased all work on it. A new maintainer may be desired.
+   :target: https://www.repostatus.org/#unsupported
 
 Python/selenium script to get Xfinity bandwidth usage from Xfinity MyAccount website. Has an easily-usable
 command line entrypoint as well as a usable Python API, and an entrypoint to send usage to Graphite.
@@ -15,6 +15,11 @@ docstrings on the ``__init__`` and ``run`` methods for information. There are al
 to a Graphite server.
 
 For the changelog, see `CHANGES.rst in the GitHub project <https://github.com/jantman/xfinity-usage/blob/master/CHANGES.rst>`_.
+
+Development Discontinued - Maintainer Wanted
+--------------------------------------------
+
+As of September 2018, AT&T Fiber has become available in my area and I've switched to that because of the much better pricing (I'm getting 300Mbps *symmetrical* for the same monthly price as Xfinity 100/10). As such, I won't be able to continue maintaining this project without an Xfinity account. If anyone would like to take over maintenance, please open an Issue on GitHub and I'll contact you.
 
 Requirements
 ------------

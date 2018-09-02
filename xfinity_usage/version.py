@@ -35,5 +35,5 @@ Jason Antman <jason@jasonantman.com> <http://www.jasonantman.com>
 ##################################################################################
 """
 
-VERSION = '3.0.0'
+VERSION = '3.0.1'
 PROJECT_URL = 'https://github.com/jantman/xfinity-usage'

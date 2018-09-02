@@ -1,6 +1,11 @@
 Changelog
 =========
 
+3.0.1 (2018-09-02)
+------------------
+
+- I'm canceling my Xfinity service and switching to AT&T Fiber. Updated README stating that I'm looking for a new maintainer for the project.
+
 3.0.0 (2018-04-18)
 -----------------
 
