@@ -137,6 +137,15 @@ and ``run`` methods of the ``XfinityUsage`` class. As a simple example:
        }
    }
 
+Docker & Kubernetes
+++++++++++++
+
+An example docker implementation of xfinity-usage can be found in `this comcastUsage-for-influxdb repository <https://github.com/billimek/comcastUsage-for-influxdb>`_
+ which leverages xfinity-usage to emit the data to influxdb in a headless docker container.
+
+A similar kubernetes helm chart can also be foind in `this helm charts repository <https://github.com/billimek/billimek-charts/tree/master/comcast>`_.
+
+
 Note About Reliability
 ----------------------
 
