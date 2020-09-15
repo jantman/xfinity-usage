@@ -610,7 +610,7 @@ def parse_args(argv):
                    metavar='BROWSER', default='firefox-headless',
                    choices=browsers,
                    help='Browser name/type to use (default: {}): {}'.format(
-                        'firefox-headless',','.join(browsers)))
+                        'firefox-headless', ','.join(browsers)))
     p.add_argument('-j', '--json', dest='json', action='store_true',
                    default=False, help='output JSON')
     p.add_argument('-g', '--graphite', action='store_true', default=False,
