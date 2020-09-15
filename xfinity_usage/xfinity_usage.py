@@ -74,6 +74,8 @@ selenium_log = logging.getLogger('selenium')
 selenium_log.setLevel(logging.INFO)
 selenium_log.propagate = True
 
+# supported browsers
+browsers = ['phantomjs', 'firefox', 'firefox-headless', 'chrome', 'chrome-headless']
 
 class XfinityUsage(object):
     """Class to screen-scrape Xfinity site for usage information."""
@@ -82,7 +84,7 @@ class XfinityUsage(object):
     JSON_URL = 'https://customer.xfinity.com/apis/services/internet/usage'
 
     def __init__(self, username, password, debug=False,
-                 cookie_file='cookies.json', browser_name='phantomjs'):
+                 cookie_file='cookies.json', browser_name='firefox-headless'):
         """
         Initialize class.
 
@@ -387,12 +389,20 @@ class XfinityUsage(object):
 
     def get_browser(self):
         """get a webdriver browser instance """
-        if self.browser_name == 'firefox':
+        if 'firefox' in self.browser_name:
             logger.debug("getting Firefox browser (local)")
             if 'DISPLAY' not in os.environ:
                 logger.debug("exporting DISPLAY=:0")
                 os.environ['DISPLAY'] = ":0"
-            browser = webdriver.Firefox()
+            if 'headless' in self.browser_name:
+                os.environ['MOZ_HEADLESS'] = "1"
+            options = webdriver.FirefoxOptions()
+            profile = webdriver.FirefoxProfile()
+            profile.set_preference('devtools.jsonview.enabled', False)
+            profile.set_preference("dom.webdriver.enabled", False)
+            profile.set_preference('useAutomationExtension', False)
+            profile.update_preferences()
+            browser = webdriver.Firefox(firefox_profile=profile, firefox_options=options)
         elif self.browser_name == 'chrome':
             logger.debug("getting Chrome browser (local)")
             browser = webdriver.Chrome()
@@ -415,9 +425,8 @@ class XfinityUsage(object):
             )
         else:
             raise SystemExit(
-                "ERROR: browser type must be one of 'firefox', 'chrome', "
-                "'phantomjs', or 'chrome-headless' not '{b}'".format(
-                    b=self.browser_name
+                "ERROR: browser type must be one of '{c}' not '{b}'".format(
+                    c=','.join(browsers), b=self.browser_name
                 )
             )
         browser.set_window_size(1024, 768)
@@ -594,10 +603,9 @@ def parse_args(argv):
                    type=str,
                    default=os.path.realpath('xfinity_usage_cookies.json'),
                    help='File to save cookies in')
-    browsers = ['phantomjs', 'firefox', 'chrome', 'chrome-headless']
-    p.add_argument('-b', '--browser', dest='browser_name', type=str,
-                   default='phantomjs', choices=browsers,
-                   help='Browser name/type to use')
+    p.add_argument('-b', '--browser', dest='browser_name', type=str, metavar='BROWSER',
+                   default='firefox-headless', choices=browsers,
+                   help='Browser name/type to use (default: firefox-headless): {}'.format(','.join(browsers)))
     p.add_argument('-j', '--json', dest='json', action='store_true',
                    default=False, help='output JSON')
     p.add_argument('-g', '--graphite', action='store_true', default=False,
