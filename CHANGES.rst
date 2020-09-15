@@ -1,6 +1,12 @@
 Changelog
 =========
 
+3.0.4 (2020-09-15)
+------------------
+- Made new firefox-headless browser the new default browser (since it works)
+- Added options to firefox-headless to avoid bot checks when getting usage from xfinity's site
+- Cleaned up -b argument help message and choices
+
 3.0.3 (2018-10-30)
 ------------------
 
